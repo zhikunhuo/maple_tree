@@ -23,20 +23,17 @@
  *
  */
 
-typedef struct maple_enode *maple_enode;
-typedef struct maple_pnode *maple_pnode;
-
-
 #define MAPLE_ALLOC_RANGE	0x01
 #define MAPLE_USE_RCU		0x02
 #define	MAPLE_HEIGHT_OFFSET	0x02
 #define	MAPLE_HEIGHT_MASK	0x7C
 
 typedef struct maple_tree {
-    unsigned int        ma_flags;
-    unsigned long       tree_elements;
-    maple_enode        *ma_root;
+    unsigned int         ma_flags;
+    unsigned long        tree_elements;
+    maple_enode          ma_root;
 }maple_tree_t;
 
+maple_tree_t * mtMalloc(void);
 
 #endif //__MAPLE_TREE__

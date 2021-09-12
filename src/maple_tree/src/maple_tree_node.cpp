@@ -3,5 +3,5 @@
 
 
 maple_node * mtMallocNode(unsigned int number){
-    return  (maple_node *)cmalloc(number, sizeof(maple_node));
+    return  (maple_node *)calloc(number, sizeof(maple_node));
 }

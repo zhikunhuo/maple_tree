@@ -1,5 +1,7 @@
 #ifndef __MAPLE_TREE_NODE__
 #define __MAPLE_TREE_NODE__
+
+#include "maple_tree_utils.h"
 /*
  * maple_tree/maple_node.h
  *
@@ -35,13 +37,13 @@ typedef struct maple_alloc {
 }maple_alloc_t;
 
 typedef struct maple_range_64 {
-    struct maple_pnode *parent;
+    maple_pnode         parent;
     unsigned long       pivot[MAPLE_RANGE64_SLOTS - 1];
     void *              slot[MAPLE_RANGE64_SLOTS];
 }maple_range_64_t;
 
 typedef struct maple_arange_64 {
-    struct maple_pnode *parent;
+    maple_pnode         parent;
     unsigned long       pivot[MAPLE_ARANGE64_SLOTS - 1];
     void        *       slot[MAPLE_ARANGE64_SLOTS];
     unsigned long       gap[MAPLE_ARANGE64_SLOTS];
@@ -52,7 +54,7 @@ typedef struct maple_arange_64 {
 typedef struct maple_node {
     union {
 	struct {
-	    struct maple_pnode *parent;
+	    maple_pnode parent;
 	    void * slot[MAPLE_NODE_SLOTS];
 	};
 	maple_range_64_t    mr64;
@@ -69,6 +71,7 @@ typedef struct maple_node {
 #define MAPLE_ENODE_NULL_OFFSET  5 
 #define MAPLE_ENODE_NULL        (1UL << MAPLE_ENODE_NULL_OFFSET) //61 for encode null flags
 
+maple_node * mtMallocNode(unsigned int number);
 
 #endif //__MAPLE_TREE_NODE__
 
