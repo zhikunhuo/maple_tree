@@ -4,8 +4,9 @@ message(STATUS "include root path")
 
 set(SOURCE_FILES  ${MODULE_ROOT_PATH}/maple_tree/src/maple_tree_utils.cpp
                 ${MODULE_ROOT_PATH}/maple_tree/src/maple_tree_node.cpp	
-                ${MODULE_ROOT_PATH}/maple_tree/src/maple_tree.cpp	
-		${MODULE_ROOT_PATH}/maple_tree/src/maple_tree_state.cpp	
+                ${MODULE_ROOT_PATH}/maple_tree/src/maple_tree.c	
+		        ${MODULE_ROOT_PATH}/maple_tree/src/maple_tree_state.cpp
+				${MODULE_ROOT_PATH}/maple_tree/src/maple_tree.cpp
                 )
 message(STATUS "SOURCE_FILES:${SOURCE_FILES}")
 #add test source file

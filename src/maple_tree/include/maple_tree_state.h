@@ -49,6 +49,8 @@ class mapTreeState{
     bool masAllocNodes();
     maple_alloc_t * masPopNode();    
     void masPrevAllocNode(int count);
+    bool masIsStart(void);    
+    bool masIsNone(void);
 private:
     maple_tree_t *  _mpTree;
     unsigned long   _index;

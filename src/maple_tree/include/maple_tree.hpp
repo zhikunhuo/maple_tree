@@ -1,9 +1,9 @@
-#ifndef __MAPLE_TREE__
-#define __MAPLE_TREE__
+#ifndef __MAPLE_TREE_HPP__
+#define __MAPLE_TREE_HPP__
 
 #include "maple_tree_node.h"
 /*
- * maple_tree/maple_tree.h
+ * maple_tree/maple_tree.hpp
  *
  * maple tree library 
  *
@@ -22,22 +22,15 @@
  * License along with this library; if not, write to the Free Software
  *
  */
+class mapTree{
+  public:
+        
+    
+  private:
+      mapTreeState *mas;
+      maple_tree_t *mt;    
+};
 
-#define MAPLE_ALLOC_RANGE	0x01
-#define MAPLE_USE_RCU		0x02
-#define	MAPLE_HEIGHT_OFFSET	0x02
-#define	MAPLE_HEIGHT_MASK	0x7C
 
-typedef struct maple_tree {
-    unsigned int         ma_flags;
-    unsigned long        tree_elements;
-    maple_enode          ma_root;
-}maple_tree_t;
+#endif //__MAPLE_TREE_HPP__
 
-maple_tree_t * mtMalloc(void);
-
-#define MAPLE_PARENT_NODE_BASE (63 -8)
-
-#define set_parent_ptr(x) (struct maple_pnode *)((unsigned long)x |((MA_ROOT_PARENT) <<MAPLE_PARENT_NODE_BASE))
-
-#endif //__MAPLE_TREE__

@@ -137,7 +137,6 @@ nomem:
     
 }
 
-
 maple_alloc_t * mapTreeState::masPopNode()
 {
     maple_alloc_t *ret  = NULL;
@@ -186,3 +185,13 @@ void mapTreeState::masPrevAllocNode(int count)
         masAllocNodes();
     }   
 }
+
+bool mapTreeState::masIsStart(void)
+{
+    return (_node == MAS_START);
+}
+bool mapTreeState::masIsNone(void)
+{
+    return (_node == MAS_NONE);
+}
+

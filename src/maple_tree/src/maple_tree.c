@@ -1,9 +1,5 @@
-#ifndef __MAPLE_TREE__
-#define __MAPLE_TREE__
-
-#include "maple_tree_node.h"
 /*
- * maple_tree/maple_tree.h
+ * maple_tree/maple_tree.c
  *
  * maple tree library 
  *
@@ -23,21 +19,18 @@
  *
  */
 
-#define MAPLE_ALLOC_RANGE	0x01
-#define MAPLE_USE_RCU		0x02
-#define	MAPLE_HEIGHT_OFFSET	0x02
-#define	MAPLE_HEIGHT_MASK	0x7C
+#include "stdlib.h"
+#include "maple_tree.h"
 
-typedef struct maple_tree {
-    unsigned int         ma_flags;
-    unsigned long        tree_elements;
-    maple_enode          ma_root;
-}maple_tree_t;
 
-maple_tree_t * mtMalloc(void);
+maple_tree_t * mtMalloc(void){
+    return (maple_tree_t *)calloc(1, sizeof(maple_tree_t));
+}
 
-#define MAPLE_PARENT_NODE_BASE (63 -8)
+void mtInit(maple_tree_t *mt, unsigned int ma_flags)
+{
+    mt->ma_flags = ma_flags;
+    mt->ma_root  = NULL;
+}
 
-#define set_parent_ptr(x) (struct maple_pnode *)((unsigned long)x |((MA_ROOT_PARENT) <<MAPLE_PARENT_NODE_BASE))
 
-#endif //__MAPLE_TREE__
