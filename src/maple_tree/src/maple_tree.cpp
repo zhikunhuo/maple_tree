@@ -28,3 +28,11 @@ mapTree::mapTree()
      mt  = mtMalloc(); 
      mas = new mapTreeState(mt,0,ULONG_MAX);
 }
+bool mapTree::insert(unsigned long first, unsigned long end,void *entry){
+}
+
+bool mapTree::showAllNodes(){
+}
+
+void * mapTree::find(unsigned long *index, unsigned long max){
+}

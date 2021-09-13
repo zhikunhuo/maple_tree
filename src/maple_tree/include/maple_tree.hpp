@@ -22,10 +22,13 @@
  * License along with this library; if not, write to the Free Software
  *
  */
+
 class mapTree{
   public:
-    mapTree();        
-    
+    mapTree();
+    bool mapTree::insert(unsigned long first, unsigned long end,void *entry);
+    bool showAllNodes();    
+    void * find(unsigned long *index, unsigned long max);
   private:
       mapTreeState *mas;
       maple_tree_t *mt;    
@@ -33,4 +36,3 @@ class mapTree{
 
 
 #endif //__MAPLE_TREE_HPP__
-
