@@ -19,6 +19,7 @@
  *
  */
 #include <stdlib.h>
+#include <stdio.h>
 #include "maple_tree_utils.h"
 #include "maple_tree_node.h"
 #include "maple_tree_state.h"
@@ -85,8 +86,7 @@ bool mapTreeState::masAllocNodes()
     masSetReqAlloc(0);
 
     if (!allocated || _alloc->node_count == (MAPLE_ALLOC_SLOTS - 1)) {
-        node = (maple_alloc_t *)mtMallocNode(1);
-        if (!node) {
+        if (!mtMallocNode(1, &node)) {
              goto nomem;
         }
        
@@ -110,14 +110,12 @@ bool mapTreeState::masAllocNodes()
             max_req -= offset;
         }
 
-        count = min(requested,max_req); 
-        tempNode = mtMallocNode(count);
-        if (!tempNode) {
+        count = mtMallocNode(min(requested,max_req), slots);
+        if (!count) {
             goto nomem;
         }
-
         for(int i=0; i< count; i++) {
-            slots[i]= &tempNode[i];
+            slots[i]= (void *)(&tempNode[i]);
         }
         node->node_count += count;
         if (slots == (void **)&node->slot) {
@@ -170,7 +168,6 @@ maple_alloc_t * mapTreeState::masPopNode()
     node->total--;
     ret = node->slot[node->node_count];
     node->slot[node->node_count--] = NULL;
-
 single_node:
 new_head:
     ret->total = 0;
@@ -183,3 +180,12 @@ new_head:
     return ret;
 }
 
+void mapTreeState::masPrevAllocNode(int count)
+{
+    unsigned long allocated = masGetAllocated();
+
+    if (allocated < count ) {
+        masSetReqAlloc((count-allocated));
+        masAllocNodes();
+    }   
+}

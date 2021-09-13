@@ -53,16 +53,23 @@ typedef struct maple_arange_64 {
 
 typedef struct maple_node {
     union {
-	struct {
-	    maple_pnode parent;
-	    void * slot[MAPLE_NODE_SLOTS];
-	};
-	maple_range_64_t    mr64;
-    maple_arange_64_t   ma64;
-    struct maple_alloc  alloc;
+        struct {
+            maple_pnode parent;
+            void * slot[MAPLE_NODE_SLOTS];
+        };
+        maple_range_64_t    mr64;
+        maple_arange_64_t   ma64;
+        struct maple_alloc  alloc;
     };
 }maple_node_t;
 
+
+typedef enum maple_type {
+    maple_node_dense,
+    maple_node_leaf_64,
+    maple_node_range_64,
+    maple_node_arange_64,
+}maple_type_t;
 
 #define MAPLE_ENODE_BASE        (63 -7) //for 64 system
 #define MAPLE_NODE_MASK         ((1UL<<MAPLE_ENODE_BASE) -1) //
@@ -71,7 +78,11 @@ typedef struct maple_node {
 #define MAPLE_ENODE_NULL_OFFSET  5 
 #define MAPLE_ENODE_NULL        (1UL << MAPLE_ENODE_NULL_OFFSET) //61 for encode null flags
 
-maple_node * mtMallocNode(unsigned int number);
+unsigned int mtMallocNode(unsigned int number, void **slot);
+unsigned long * mtNodePivots(maple_node * node, maple_type_t type);
+void ** mtNodeSlots(maple_node_t *node, maple_type_t mt);
+maple_enode *mtSetNode(maple_node_t *node, maple_type_t type);
+maple_type_t mtGetNodetype(maple_enode *entry);
 
 #endif //__MAPLE_TREE_NODE__
 
