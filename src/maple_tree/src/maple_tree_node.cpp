@@ -38,7 +38,7 @@ maple_enode *mtSetNode(maple_node_t *node, maple_type_t type)
     return (maple_enode *)((unsigned long)node |((unsigned long)value<< MAPLE_ENODE_BASE));
 }
 
-unsigned long * mtNodePivots(maple_node * node, maple_type_t type)
+unsigned long * mtNodePivots(maple_node_t * node, maple_type_t type)
 {
     switch (type){
         case maple_node_arange_64:

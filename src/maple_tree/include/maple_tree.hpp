@@ -24,7 +24,7 @@
  */
 class mapTree{
   public:
-        
+    mapTree();        
     
   private:
       mapTreeState *mas;

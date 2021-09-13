@@ -34,7 +34,14 @@ typedef struct maple_tree {
     maple_enode          ma_root;
 }maple_tree_t;
 
-maple_tree_t * mtMalloc(void);
+#if defined(__cplusplus)
+extern "C" {
+#endif
+    maple_tree_t * mtMalloc(void);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #define MAPLE_PARENT_NODE_BASE (63 -8)
 

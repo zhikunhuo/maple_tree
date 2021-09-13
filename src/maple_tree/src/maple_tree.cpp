@@ -21,9 +21,10 @@
 #include "stdlib.h"
 #include "maple_tree.h"
 #include "maple_tree_state.h"
+#include "maple_tree.hpp"
 
 mapTree::mapTree()
 {
-     mt  = mtMalloc; 
-     mas = new mapTreeState(mt,ULONG_MAX);
+     mt  = mtMalloc(); 
+     mas = new mapTreeState(mt,0,ULONG_MAX);
 }

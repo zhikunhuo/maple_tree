@@ -79,7 +79,7 @@ typedef enum maple_type {
 #define MAPLE_ENODE_NULL        (1UL << MAPLE_ENODE_NULL_OFFSET) //61 for encode null flags
 
 unsigned int mtMallocNode(unsigned int number, void **slot);
-unsigned long * mtNodePivots(maple_node * node, maple_type_t type);
+unsigned long * mtNodePivots(maple_node_t * node, maple_type_t type);
 void ** mtNodeSlots(maple_node_t *node, maple_type_t mt);
 maple_enode *mtSetNode(maple_node_t *node, maple_type_t type);
 maple_type_t mtGetNodetype(maple_enode *entry);
