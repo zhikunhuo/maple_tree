@@ -86,7 +86,7 @@ bool mapTreeState::masAllocNodes()
     masSetReqAlloc(0);
 
     if (!allocated || _alloc->node_count == (MAPLE_ALLOC_SLOTS - 1)) {
-        if (!mtMallocNode(1, &node)) {
+        if (!mtMallocNode(1,(void **)&node)) {
              goto nomem;
         }
        
@@ -113,9 +113,6 @@ bool mapTreeState::masAllocNodes()
         count = mtMallocNode(min(requested,max_req), slots);
         if (!count) {
             goto nomem;
-        }
-        for(int i=0; i< count; i++) {
-            slots[i]= (void *)(&tempNode[i]);
         }
         node->node_count += count;
         if (slots == (void **)&node->slot) {
