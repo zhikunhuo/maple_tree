@@ -176,14 +176,16 @@ new_head:
     return ret;
 }
 
-void mapTreeState::masPrevAllocNode(int count)
+bool mapTreeState::masPrevAllocNode(int count)
 {
     unsigned long allocated = masGetAllocated();
 
     if (allocated < count ) {
         masSetReqAlloc((count-allocated));
-        masAllocNodes();
-    }   
+        return masAllocNodes();
+    }
+
+    return true;
 }
 
 bool mapTreeState::masIsStart(void)
@@ -195,3 +197,129 @@ bool mapTreeState::masIsNone(void)
     return (_node == MAS_NONE);
 }
 
+bool mapTreeState::masStart()
+{
+    if (masIsStart()) {        
+        _node   = MAS_NONE;
+        _min    = 0;
+        _max    = ULONG_MAX;
+        _depth  = 0;
+        _offset = 0;
+
+        if(!_mpTree->ma_root){
+            return true;
+        }
+
+        _node = _mpTree->ma_root;
+    }
+
+    return false;
+}
+void mapTreeState::masSetRange(unsigned long first, unsigned long end)
+{
+    _index = first;
+    _last  = end;
+}
+
+void mapTreeState::masSetNode(maple_enode node){
+    _node = node;
+}
+
+unsigned long mapTreeState::masGetIndex(void){
+    return _index;
+}
+
+void mapTreeState::masSetIndex(unsigned long index){
+    _index =  index;
+}
+
+unsigned char mapTreeState::masGetOffset(void){
+    return _offset;
+}
+
+void mapTreeState::masSetOffset(unsigned char offset) {
+    _offset = offset;
+}
+maple_node_t * mapTreeState::masGetNode(void)
+{
+    return mtGetNode(_node);
+}
+
+bool mapTreeState::masIsSpanWsr(unsigned long piv,
+                                    maple_type_t type, void *entry)
+{
+    unsigned long max;
+    unsigned long last = _last;
+
+    /* Contained in this pivot */
+    if (piv > last) {
+         return false;
+    }
+
+    max = _max;
+    if (mtNodeIsLeaf(type)) {
+        /* Fits in the node, but may span slots. */
+        if (last < max) {
+            return false;
+        }
+
+        /* Writes to the end of the node but not null. */
+        if ((last == max) && entry) {
+            return false;
+        }
+
+        /*
+             * Writing ULONG_MAX is not a spanning write regardless of the
+             * value being written as long as the range fits in the node.
+             */
+        if ((last == ULONG_MAX) && (last == max)) {
+            return false;
+        }
+    } else if ((piv == last) && entry) {
+        return false;
+    }
+
+    return true;
+}
+
+unsigned char mapTreeState::masDataEnd()
+{
+    maple_type_t type;
+    unsigned char offset;
+    unsigned long *pivots;
+
+    type = mtGetNodetype(_node);
+    #if 0
+    if (type == maple_node_arange_64) {
+        return ma_meta_end(mte_to_node(mas->node), type);
+    }
+    #endif
+    offset = mtGetMinSlotsCount(type);
+    pivots = mtNodePivots(masGetNode(), type);
+    if ((!pivots[offset])) {
+        goto decrement;
+    }
+
+    /* Higher than the min. */
+    offset = mtGetPivotsCount(type) - 1;
+    /* Check exceptions outside of the loop. */
+    if ((pivots[offset])) {
+        /* At least almost full. */
+
+        /* Totally full. */
+        if (pivots[offset] != _max) {
+            return offset + 1;
+        }
+        return offset;
+    }
+
+decrement:
+    while (--offset) {
+        if ((pivots[offset]))
+            break;
+    };
+    if ((pivots[offset] < _max)) {
+        offset++;
+    }
+    return offset;
+}

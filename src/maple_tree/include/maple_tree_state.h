@@ -48,10 +48,20 @@ class mapTreeState{
     unsigned int masGetReqAlloc();
     bool masAllocNodes();
     maple_alloc_t * masPopNode();    
-    void masPrevAllocNode(int count);
+    bool masPrevAllocNode(int count);
     bool masIsStart(void);    
     bool masIsNone(void);
-private:
+    bool masStart();
+    void masSetNode(maple_enode node);
+    maple_node_t * masGetNode(void);
+    unsigned long masGetIndex(void);
+    void masSetIndex(unsigned long index);
+    unsigned char masGetOffset(void);
+    void masSetOffset(unsigned char offset);
+    void masSetRange(unsigned long first, unsigned long end);
+    bool masIsSpanWsr(unsigned long piv, maple_type_t type, void *entry);
+    unsigned char masDataEnd();
+public:
     maple_tree_t *  _mpTree;
     unsigned long   _index;
     unsigned long   _last;

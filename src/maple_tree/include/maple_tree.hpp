@@ -26,13 +26,21 @@
 class mapTree{
   public:
     mapTree();
+    int rootExpand(void *entry);
+    bool append(void *entry, unsigned long min, unsigned char end,
+                        void *content);
     bool insert(unsigned long first, unsigned long end,void *entry);
     void showNode(maple_enode node,int height,unsigned long *count);
     unsigned long showAllNodes();    
     void * find(unsigned long *index, unsigned long max);
+    void nodeWalk(maple_type_t type,
+                        unsigned long *range_min, unsigned long *range_max);
+    bool mapTreeWalk(unsigned long *range_min,
+                         unsigned long *range_max,  void *entry);
+    unsigned long getMinPivots(unsigned long *pivots, unsigned char offset);
   private:
-      mapTreeState *mas;
-      maple_tree_t *mt;    
+      mapTreeState * _mas;
+      maple_tree_t * _mt;    
 };
 
 

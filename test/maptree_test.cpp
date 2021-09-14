@@ -29,3 +29,19 @@ protected:
 TEST_F(mapleTreeTest,showAllNodes){
     EXPECT_EQ(mptree->showAllNodes(),0);    
 }
+
+TEST_F(mapleTreeTest,insertInValid){
+    EXPECT_EQ(mptree->insert(200,1,NULL),false);
+    EXPECT_EQ(mptree->insert(1,200,NULL),false);
+    EXPECT_EQ(mptree->insert(0,0,NULL),false);
+}
+
+TEST_F(mapleTreeTest,insertNode){
+    EXPECT_EQ(mptree->insert(1,200,(void *)0x1234),true);
+    EXPECT_EQ(mptree->showAllNodes(),1);
+    EXPECT_EQ(mptree->insert(1,200,(void *)0x1236),false);
+    EXPECT_EQ(mptree->insert(5,200,(void *)0x1236),false);
+    EXPECT_EQ(mptree->insert(5,100,(void *)0x1237),false);
+    EXPECT_EQ(mptree->showAllNodes(),1);
+}
+

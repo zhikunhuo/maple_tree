@@ -38,13 +38,27 @@ typedef struct maple_tree {
 extern "C" {
 #endif
     maple_tree_t * mtMalloc(void);
+    void mtSetHeight(maple_tree_t *mt, unsigned char depth);
 
 #if defined(__cplusplus)
 }
 #endif
 
 #define MAPLE_PARENT_NODE_BASE (63 -8)
+#define MAPLE_PARENTS_NODE_TYPE_MASK    0x7  //node type 56~59 bit
+#define MAPLE_PARENT_SLOT_SHIFT  (63-4) //59~63  slot id
+#define MAPLE_PARENT_NODE_MASK  ((1UL<<MAPLE_PARENT_NODE_BASE) -1)
 
-#define set_parent_ptr(x) (struct maple_pnode *)((unsigned long)x |((MA_ROOT_PARENT) <<MAPLE_PARENT_NODE_BASE))
+typedef enum maple_parent_type {
+    maple_node_root = 1,
+}maple_parent_type_t;
+
+
+#define MAPLE_ALLOC_RANGE	0x01
+#define MAPLE_USE_RCU		0x02
+#define	MAPLE_HEIGHT_OFFSET	0x02
+#define	MAPLE_HEIGHT_MASK	0x7C
+
+#define set_parent_root(x) (maple_pnode)((unsigned long)x|(unsigned long)(maple_node_root & MAPLE_PARENTS_NODE_TYPE_MASK)<<MAPLE_PARENT_NODE_BASE)
 
 #endif //__MAPLE_TREE__

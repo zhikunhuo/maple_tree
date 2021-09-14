@@ -1,12 +1,28 @@
 #include "stdlib.h"
 #include "string.h"
 #include "maple_tree_node.h"
+#include "maple_tree.h"
+
 
 static const unsigned char mt_pivots[] = {
     [maple_node_dense]       = 0,
     [maple_node_leaf_64]     = MAPLE_RANGE64_SLOTS - 1,
     [maple_node_range_64]    = MAPLE_RANGE64_SLOTS - 1,
     [maple_node_arange_64]   = MAPLE_ARANGE64_SLOTS - 1,
+};
+
+static const unsigned char mt_slots[] = {
+    [maple_node_dense]       = MAPLE_NODE_SLOTS,
+    [maple_node_leaf_64]     = MAPLE_RANGE64_SLOTS,
+    [maple_node_range_64]    = MAPLE_RANGE64_SLOTS,
+    [maple_node_arange_64]   = MAPLE_ARANGE64_SLOTS,
+};
+
+static const unsigned char mt_min_slots[] = {
+    [maple_node_dense]      = MAPLE_NODE_SLOTS / 2,
+    [maple_node_leaf_64]    = (MAPLE_RANGE64_SLOTS / 2) - 2,
+    [maple_node_range_64]   = (MAPLE_RANGE64_SLOTS / 2) - 2,
+    [maple_node_arange_64]  = (MAPLE_ARANGE64_SLOTS / 2) - 1,
 };
 
 unsigned int mtMallocNode(unsigned int number, void **slot){
@@ -37,14 +53,29 @@ unsigned char mtGetPivotsCount(maple_type_t type)
     return mt_pivots[type];
 }
 
+unsigned char mtGetSlotsCount(maple_type_t type)
+{
+    return mt_slots[type];
+}
+
+unsigned char mtGetMinSlotsCount(maple_type_t type)
+{
+    return mt_min_slots[type];
+}
+
 maple_enode mtSetNode(maple_node_t *node, maple_type_t type)
 {
-    unsigned char value = ((type & 0xF) & MAPLE_ENODE_NULL);
+    unsigned char value = (type & 0xF);
     return (maple_enode)((unsigned long)node |((unsigned long)value<< MAPLE_ENODE_BASE));
 }
 maple_node_t *mtGetNode(maple_enode entry)
 {
     return (maple_node_t *)((unsigned long)entry & MAPLE_NODE_MASK);
+}
+
+maple_enode mtSetRootFlag(maple_enode node)
+{
+    return  (maple_enode)(((unsigned long)node | (MAPLE_ROOT_NODE)<<MAPLE_ENODE_BASE));
 }
 
 unsigned long * mtNodePivots(maple_node_t * node, maple_type_t type)
@@ -77,8 +108,39 @@ void ** mtNodeSlots(maple_node_t *node, maple_type_t mt)
     }
 }
 
+void * mtNodeGetSlot(maple_enode enode, maple_type_t type, 
+                        unsigned char offset)
+{
+    maple_node_t *node = mtGetNode(enode);
+    void **slot  = mtNodeSlots(node, type);
+
+    return slot[offset];
+}
+
 bool mtNodeIsDense(maple_type_t type)
 {
     return type < maple_node_leaf_64;
+}
+
+bool  mtNodeIsLeaf(maple_type_t type)
+{
+    return type < maple_node_range_64;
+}
+
+maple_node_t * mtParent(maple_enode enode)
+{
+    return (maple_node_t *)((unsigned long)(mtGetNode(enode)->parent) & MAPLE_PARENT_NODE_MASK);
+}
+
+
+bool mtDeadNode(maple_enode enode)
+{
+    maple_node_t *parent, *node;
+
+    node = mtGetNode(enode);    
+   
+    parent = mtParent(enode);
+
+    return (parent == node);
 }
 

@@ -75,18 +75,29 @@ typedef enum maple_type {
 #define MAPLE_NODE_MASK         ((1UL<<MAPLE_ENODE_BASE) -1) //
 #define MAPLE_NODE_TYPE_MASK    0xF  //node type 56~59 bit
 
+#define MAPLE_ROOT_NODE (1UL<<4) //root node flag 60
+
+
 #define MAPLE_ENODE_NULL_OFFSET  5 
 #define MAPLE_ENODE_NULL        (1UL << MAPLE_ENODE_NULL_OFFSET) //61 for encode null flags
 
 unsigned int mtMallocNode(unsigned int number, void **slot);
 unsigned long * mtNodePivots(maple_node_t * node, maple_type_t type);
+unsigned char mtGetSlotsCount(maple_type_t type);
 void ** mtNodeSlots(maple_node_t *node, maple_type_t mt);
 maple_enode mtSetNode(maple_node_t *node, maple_type_t type);
 maple_type_t mtGetNodetype(maple_enode entry);
 maple_enode mtSetNode(maple_node_t *node, maple_type_t type);
 unsigned char mtGetPivotsCount(maple_type_t type);
 bool mtNodeIsDense(maple_type_t type);
+bool mtNodeIsLeaf(maple_type_t type);
 maple_node_t *mtGetNode(maple_enode entry);
+maple_enode mtSetRootFlag(maple_enode node);
+bool mtDeadNode(maple_enode enode);
+void * mtNodeGetSlot(maple_enode enode, maple_type_t type, 
+                        unsigned char offset);
+unsigned char mtGetMinSlotsCount(maple_type_t type);
+
 
 #endif //__MAPLE_TREE_NODE__
 

@@ -33,4 +33,12 @@ void mtInit(maple_tree_t *mt, unsigned int ma_flags)
     mt->ma_root  = NULL;
 }
 
+void mtSetHeight(maple_tree_t *mt, unsigned char depth)
+{
+    unsigned int new_flags = mt->ma_flags;
+
+    new_flags &= ~MAPLE_HEIGHT_MASK;
+    new_flags |= depth << MAPLE_HEIGHT_OFFSET;
+    mt->ma_flags = new_flags;
+}
 
