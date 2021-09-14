@@ -26,7 +26,7 @@
 class mapTree{
   public:
     mapTree();
-    bool mapTree::insert(unsigned long first, unsigned long end,void *entry);
+    bool insert(unsigned long first, unsigned long end,void *entry);
     bool showAllNodes();    
     void * find(unsigned long *index, unsigned long max);
   private:
