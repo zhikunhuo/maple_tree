@@ -27,15 +27,24 @@ unsigned int mtMallocNode(unsigned int number, void **slot){
     return count;
 }
 
-maple_type_t mtGetNodetype(maple_enode *entry)
+maple_type_t mtGetNodetype(maple_enode entry)
 {
     return  (maple_type_t)(((unsigned long)entry >> MAPLE_ENODE_BASE) & MAPLE_NODE_TYPE_MASK);
 }
 
-maple_enode *mtSetNode(maple_node_t *node, maple_type_t type)
+unsigned char mtGetPivotsCount(maple_type_t type)
+{
+    return mt_pivots[type];
+}
+
+maple_enode mtSetNode(maple_node_t *node, maple_type_t type)
 {
     unsigned char value = ((type & 0xF) & MAPLE_ENODE_NULL);
-    return (maple_enode *)((unsigned long)node |((unsigned long)value<< MAPLE_ENODE_BASE));
+    return (maple_enode)((unsigned long)node |((unsigned long)value<< MAPLE_ENODE_BASE));
+}
+maple_node_t *mtGetNode(maple_enode entry)
+{
+    return (maple_node_t *)((unsigned long)entry & MAPLE_NODE_MASK);
 }
 
 unsigned long * mtNodePivots(maple_node_t * node, maple_type_t type)
@@ -67,3 +76,9 @@ void ** mtNodeSlots(maple_node_t *node, maple_type_t mt)
             return node->slot;
     }
 }
+
+bool mtNodeIsDense(maple_type_t type)
+{
+    return type < maple_node_leaf_64;
+}
+

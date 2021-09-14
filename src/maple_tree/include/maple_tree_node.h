@@ -81,8 +81,12 @@ typedef enum maple_type {
 unsigned int mtMallocNode(unsigned int number, void **slot);
 unsigned long * mtNodePivots(maple_node_t * node, maple_type_t type);
 void ** mtNodeSlots(maple_node_t *node, maple_type_t mt);
-maple_enode *mtSetNode(maple_node_t *node, maple_type_t type);
-maple_type_t mtGetNodetype(maple_enode *entry);
+maple_enode mtSetNode(maple_node_t *node, maple_type_t type);
+maple_type_t mtGetNodetype(maple_enode entry);
+maple_enode mtSetNode(maple_node_t *node, maple_type_t type);
+unsigned char mtGetPivotsCount(maple_type_t type);
+bool mtNodeIsDense(maple_type_t type);
+maple_node_t *mtGetNode(maple_enode entry);
 
 #endif //__MAPLE_TREE_NODE__
 

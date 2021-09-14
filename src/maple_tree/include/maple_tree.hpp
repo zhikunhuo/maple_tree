@@ -27,7 +27,8 @@ class mapTree{
   public:
     mapTree();
     bool insert(unsigned long first, unsigned long end,void *entry);
-    bool showAllNodes();    
+    void showNode(maple_enode node,int height,unsigned long *count);
+    unsigned long showAllNodes();    
     void * find(unsigned long *index, unsigned long max);
   private:
       mapTreeState *mas;
