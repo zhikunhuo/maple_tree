@@ -61,6 +61,16 @@ class mapTreeState{
     void masSetRange(unsigned long first, unsigned long end);
     bool masIsSpanWsr(unsigned long piv, maple_type_t type, void *entry);
     unsigned char masDataEnd();
+    unsigned long masGetPivot(unsigned long *pivots,
+                                   unsigned char piv,
+                                   maple_type_t type);
+    unsigned long masGetLogicalPivot(unsigned long *pivots,
+                                            unsigned char offset,
+                                            maple_type_t type);
+    bool masTreeIsAlloc();
+    void masCopyNodeToBig(unsigned char mas_start,
+            unsigned char mas_end, struct maple_big_node *b_node,
+            unsigned char mab_start);
 public:
     maple_tree_t *  _mpTree;
     unsigned long   _index;

@@ -20,9 +20,12 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "maple_tree_utils.h"
 #include "maple_tree_node.h"
 #include "maple_tree_state.h"
+#include "maple_tree.h"
+
 
 mapTreeState::mapTreeState(maple_tree_t *tree, unsigned long first, unsigned long end){
     _mpTree = tree;
@@ -323,3 +326,76 @@ decrement:
     }
     return offset;
 }
+
+unsigned long mapTreeState::masGetPivot(unsigned long *pivots,
+                                            unsigned char piv,
+                                            maple_type_t type)
+{
+    if (piv >= mtGetPivotsCount(type))
+        return _max;
+
+    return pivots[piv];
+}
+
+unsigned long mapTreeState::masGetLogicalPivot(unsigned long *pivots,
+            unsigned char offset, maple_type_t type)
+{
+    unsigned long lpiv = masGetPivot(pivots, offset, type);
+
+    if (!lpiv && offset) {
+        return _max;
+    }
+
+    return lpiv;
+}
+
+bool mapTreeState::masTreeIsAlloc()
+{
+    return (_mpTree->ma_flags & MAPLE_ALLOC_RANGE);
+}
+
+void mapTreeState::masCopyNodeToBig(unsigned char mas_start,
+            unsigned char mas_end, struct maple_big_node *b_node,
+            unsigned char mab_start)
+{
+    maple_type_t mt;
+    maple_node_t *node = masGetNode();
+    void  **slots;
+    unsigned long *pivots, *gaps;
+    int i = mas_start, j = mab_start;
+    unsigned char piv_end;
+
+    mt = mtGetNodetype(_node);
+    pivots = mtNodePivots(node, mt);
+    if (!i) {
+        b_node->pivot[j] = pivots[i++];
+        if (i > mas_end)
+            goto complete;
+        j++;
+    }
+
+    piv_end = min(mas_end, mtGetPivotsCount(mt));
+    for (; i < piv_end; i++, j++) {
+        b_node->pivot[j] = pivots[i];
+        if (!b_node->pivot[j])
+            break;
+
+        if (_max == b_node->pivot[j])
+            goto complete;
+    }
+
+    if (i <= mas_end)
+        b_node->pivot[j] = masGetPivot(pivots, i, mt);
+
+complete: 
+    b_node->b_end = ++j;
+    j -= mab_start;
+    slots = mtNodeSlots(node, mt);
+    memcpy(b_node->slot + mab_start, slots + mas_start, sizeof(void *) * j);
+    if (!mtNodeIsLeaf(mt) &&    masTreeIsAlloc()) {
+        //gaps = ma_gaps(node, mt);
+        //memcpy(b_node->gap + mab_start, gaps + mas_start,
+        //       sizeof(unsigned long) * j);
+    }
+}
+

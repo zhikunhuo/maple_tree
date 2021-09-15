@@ -26,11 +26,16 @@
 class mapTree{
   public:
     mapTree();
+    bool nodeIsRoot(maple_enode node);
     int rootExpand(void *entry);
     bool append(void *entry, unsigned long min, unsigned char end,
                         void *content);
+    bool insertSlot(void *entry,
+                        unsigned long min, unsigned long max,
+                        unsigned char end, void *content,
+                        void **slots);
     bool insert(unsigned long first, unsigned long end,void *entry);
-    void showNode(maple_enode node,int height,unsigned long *count);
+    void showNode(maple_enode node,int height,unsigned long *count,bool flag);
     unsigned long showAllNodes();    
     void * find(unsigned long *index, unsigned long max);
     void nodeWalk(maple_type_t type,
@@ -38,6 +43,14 @@ class mapTree{
     bool mapTreeWalk(unsigned long *range_min,
                          unsigned long *range_max,  void *entry);
     unsigned long getMinPivots(unsigned long *pivots, unsigned char offset);
+    unsigned long getAllNodeCount();
+  private:
+    bool tryStoreNodeStore( unsigned long min, unsigned long max,
+                    unsigned char end, void *entry,void *content,
+                    maple_type_t mt, void **slots,
+                    unsigned long *pivots);
+    unsigned char storeBignode( struct maple_big_node *b_node,
+                        void *entry, unsigned char end);
   private:
       mapTreeState * _mas;
       maple_tree_t * _mt;    

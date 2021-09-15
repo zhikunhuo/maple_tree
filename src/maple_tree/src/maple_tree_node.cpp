@@ -1,5 +1,6 @@
 #include "stdlib.h"
 #include "string.h"
+#include "maple_tree_utils.h"
 #include "maple_tree_node.h"
 #include "maple_tree.h"
 

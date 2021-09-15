@@ -20,6 +20,7 @@
  */
 #include "stdlib.h"
 #include "stdio.h"
+#include "string.h"
 #include "maple_tree.h"
 #include "maple_tree_state.h"
 #include "maple_tree.hpp"
@@ -30,6 +31,9 @@ mapTree::mapTree()
      _mas = new mapTreeState(_mt, 0, ULONG_MAX);
 }
 
+bool mapTree::nodeIsRoot(maple_enode node){
+    return (mtGetNode(mtGetNode(node)->parent) == (maple_node_t*)_mt)?true:false;
+}
 int mapTree::rootExpand(void *entry)
 {
     maple_enode oldRoot = _mt->ma_root;
@@ -109,6 +113,256 @@ bool mapTree::append(void *entry, unsigned long min, unsigned char end,
     return true;
 }
 
+bool mapTree::tryStoreNodeStore( unsigned long min, unsigned long max,
+                    unsigned char end, void *entry,void *content,
+                    maple_type_t mt, void **slots,
+                    unsigned long *pivots)
+{
+    void  **dst_slots;
+    unsigned long *dst_pivots;
+    unsigned char dst_offset, new_end = end;
+    unsigned char offset, offset_end;
+    maple_node_t reuse, *newnode;
+    unsigned char copy_size = 0;
+
+    offset = offset_end = _mas->_offset;
+    if (_mas->_last == max) {
+        /* don't copy this offset */
+        offset_end++;
+    } else if (_mas->_last < max) {
+        /* new range ends in this range */
+        if (max == ULONG_MAX) {
+            //mas_bulk_rebalance(mas, end, mt);
+        }
+
+        new_end++;
+        offset_end = offset;
+     } else if (_mas->_last == _mas->_max) {
+        /* runs right to the end of the node */
+        new_end = offset;
+        /* no data beyond this range */
+        offset_end = end + 1;
+    } else {
+        unsigned long piv = 0;
+
+        new_end++;
+        do {
+            offset_end++;
+            new_end--;
+            piv = _mas->masGetLogicalPivot(pivots, offset_end, mt);
+        }while (piv <= _mas->_last);
+    }
+
+    /* new range starts within a range */
+    if (min < _mas->_index) {
+        new_end++;
+    }
+
+    /* Not enough room */
+    if (new_end >= mtGetPivotsCount(mt)) {
+        return false;
+    }
+
+    /* Not enough data. */
+    if (!nodeIsRoot(_mas->_node) && (new_end <= mtGetMinSlotsCount(mt))) {
+         //!(mas->mas_flags & MA_STATE_BULK))
+        return false;
+    }
+
+    /* set up node. */
+    memset(&reuse, 0, sizeof(struct maple_node));
+    newnode = &reuse;
+
+    newnode->parent =_mas->masGetNode()->parent;
+
+    dst_pivots = mtNodePivots(newnode, mt);
+    dst_slots  = mtNodeSlots(newnode, mt);
+    /* Copy from start to insert point */
+    memcpy(dst_pivots, pivots, sizeof(unsigned long) * (offset + 1));
+    memcpy(dst_slots, slots, sizeof(void *) * (offset + 1));
+    dst_offset = offset;
+
+    /* Handle insert of new range starting after old range */
+    if (min < _mas->_index) {
+        dst_slots[dst_offset] =content;
+        dst_pivots[dst_offset++] = _mas->_index - 1;
+    }
+
+    /* Store the new entry and range end. */
+    unsigned char max_piv = mtGetPivotsCount(mt);
+    if (dst_offset < max_piv){
+        dst_pivots[dst_offset] = _mas->_last;
+    }
+    _mas->_offset = dst_offset;
+    dst_slots[dst_offset++] = entry;
+
+    /* this range wrote to the end of the node. */
+    if (offset_end > end) {
+        goto done;
+    }
+
+    /* Copy to the end of node if necessary. */
+    copy_size = end - offset_end + 1;
+    memcpy(dst_slots + dst_offset, slots + offset_end, sizeof(void *) * copy_size);
+    if (dst_offset < max_piv) {
+        if (copy_size > max_piv - dst_offset)
+            copy_size = max_piv - dst_offset;
+        memcpy(dst_pivots + dst_offset, pivots + offset_end,
+           sizeof(unsigned long) * copy_size);
+    }
+   
+done:
+    if ((end == mtGetSlotsCount(mt) - 1) && (new_end < mtGetSlotsCount(mt) - 1)) {
+        dst_pivots[new_end] = _mas->_max;
+    }
+
+    memcpy(_mas->masGetNode(), newnode, sizeof(maple_node_t));
+
+    //mas_update_gap(mas);
+    return true;
+}
+
+
+bool mapTree::insertSlot(void *entry,
+                        unsigned long min, unsigned long max,
+                        unsigned char end, void *content,
+                        void **slots)
+{
+    maple_node_t *node    = _mas->masGetNode();
+    maple_type_t mt       = mtGetNodetype(_mas->_node);
+    unsigned long *pivots = mtNodePivots(_mas->masGetNode(), mt);
+    unsigned long lmax; /* Logical max. */
+    unsigned char offset = _mas->_offset;
+    
+    unsigned char max_slots = mtGetSlotsCount(mt);
+    if (min == _mas->_index && max == _mas->_last) {
+        /* exact fit. */
+        slots[offset] = entry;
+        goto done;
+    }
+
+    /* out of room. */
+    if (offset + 1 >= max_slots) {
+        return false;
+    }
+
+    /* going to split a single entry. */
+    if (max > _mas->_last) {
+        if ((offset == end) &&
+            append(entry, min, end, content)) {
+                return true;
+          }
+
+        goto try_node_store;
+    }
+#if 0
+    lmax = mas_logical_pivot(mas, pivots, offset + 1, mt);
+    /* going to overwrite too many slots. */
+    if (lmax < mas->last)
+        goto try_node_store;
+
+    if (min == mas->index) {
+        /* overwriting two or more ranges with one. */
+        if (lmax <= mas->last)
+            goto try_node_store;
+
+        /* Overwriting a portion of offset + 1. */
+        slots[offset] = entry;
+        pivots[offset] = mas->last;
+        goto done;
+    } else if (min < mas->index) {
+        /* split start */
+        /* Doesn't end on the next range end. */
+        if (lmax != mas->last)
+            goto try_node_store;
+        if (offset + 1 < mt_pivots[mt])
+            pivots[offset + 1] = mas->last;
+        slots[offset + 1] = entry;
+        pivots[offset] = mas->index - 1;
+        mas->offset++; /* Keep mas accurate. */
+        goto done;
+    }
+#endif
+
+    return false;
+
+done:
+    //mas_update_gap(mas);
+    return true;
+try_node_store:
+    return tryStoreNodeStore(min, max, end, entry,content, mt, slots, pivots);
+}
+
+unsigned char mapTree::storeBignode( struct maple_big_node *b_node,
+                        void *entry, unsigned char end)
+{
+    unsigned char slot    = _mas->_offset;
+    void *contents;
+    unsigned char b_end = 0;
+    /* Possible underflow of piv will wrap back to 0 before use. */
+    unsigned long piv     = _mas->_min - 1;
+    maple_node_t *node    = _mas->masGetNode();
+    enum maple_type mt    = mtGetNodetype(_mas->_node);
+    unsigned long *pivots = mtNodePivots(node, mt);
+    void ** slots;
+
+    if (slot) {
+        /* Copy start data up to insert. */
+        _mas->masCopyNodeToBig(0,(slot - 1), b_node,0);
+        b_end = b_node->b_end;
+        piv  = b_node->pivot[b_end - 1];
+    }
+    slots = mtNodeSlots(node, mt);
+    contents = slots[slot];    
+    if (piv + 1 < _mas->_index) {
+        /* Handle range starting after old range */
+        b_node->slot[b_end] = contents;
+        if (!contents) {
+            b_node->gap[b_end] = _mas->_index - 1 - piv;
+        }
+        b_node->pivot[b_end++] = _mas->_index - 1;
+    }
+    /* Store the new entry. */
+    _mas->_offset = b_end;
+    b_node->slot[b_end] = entry;
+    b_node->pivot[b_end] = _mas->_last;
+
+    /* Handle new range ending before old range ends */
+    piv = _mas->masGetPivot(pivots, slot, mt); 
+    if (piv > _mas->_last) {
+        //if (piv == ULONG_MAX)
+            //mas_bulk_rebalance(mas, b_node->b_end, mt);
+
+        b_node->slot[++b_end] = contents;
+        if (!contents)
+            b_node->gap[b_end] = piv - _mas->_last + 1;
+        b_node->pivot[b_end] = piv;
+    } else {
+        piv = _mas->_last;
+    }
+    /* Appended. */
+    if (piv >= _mas->_max) {
+        return b_end;
+    }
+
+    do {
+        /* Handle range overwrites */
+        piv = _mas->masGetPivot(pivots, ++slot, mt);
+    } while ((piv <= _mas->_last) && (slot <= end));
+
+    if (piv > _mas->_last) {
+        /* Copy end data to the end of the node. */
+        if (slot > end) {
+            b_node->slot[++b_end] = NULL;
+            b_node->pivot[b_end] = piv;
+        } else {
+            _mas->masCopyNodeToBig(slot, end + 1, b_node, ++b_end);
+            b_end = b_node->b_end - 1;
+        }
+    }
+    return b_end;
+}
+
 bool mapTree::insert(unsigned long first, unsigned long end, void *entry){
     unsigned long rMax = 0;
     unsigned long rMin = 0;
@@ -117,6 +371,7 @@ bool mapTree::insert(unsigned long first, unsigned long end, void *entry){
     maple_node_t *node = NULL;
     void  **slots;
     unsigned char endIndex;
+    struct maple_big_node b_node;
 
     if ((first > end) || (!entry)
         ||(!first && !end)) {
@@ -147,7 +402,19 @@ bool mapTree::insert(unsigned long first, unsigned long end, void *entry){
     }
 
     endIndex = _mas->masDataEnd();
-    return true;
+    if (insertSlot(entry,rMin, rMax, endIndex, content,slots)) {
+        return true;
+    }
+
+    
+    b_node.type = mtGetNodetype(_mas->_node);    
+    //copy pivot and slot to big node
+    b_node.b_end = storeBignode(&b_node, entry, end);    
+    b_node.min   = _mas->_min;
+    unsigned char zero = MAPLE_BIG_NODE_SLOTS - b_node.b_end - 1;    
+
+    //TODO
+    return false;
 }
 
 unsigned long mapTree::getMinPivots(unsigned long *pivots, unsigned char offset)
@@ -251,35 +518,43 @@ bool mapTree::mapTreeWalk(unsigned long *range_min,
     return true;
 }
 
-void mapTree::showNode(maple_enode node,int height, unsigned long *number)
+void mapTree::showNode(maple_enode node,int height, unsigned long *number,bool flag)
 {
     maple_type_t type;
     unsigned long nodeCount = 0;
     type = mtGetNodetype(node);
     if (mtNodeIsDense(type)) {
-        printf("there is no node\n");
+        if (flag) {
+            printf("there is no node\n");
+        }
         return ;
     }
 
     unsigned long *pivots = mtNodePivots(mtGetNode(node), type);
     unsigned char  count  = mtGetPivotsCount(type);
     void ** slot          = mtNodeSlots(mtGetNode(node), type);
-    for(int i=0;i<height; i++) {
-          printf("\t");
-    }
-
-    printf("--height:%d,node:%p\n",height,node);
-    height++;
-    for(int loop=0;loop<count; loop++) {
+    if (flag) {
         for(int i=0;i<height; i++) {
             printf("\t");
         }
-        
+  
+        printf("--height:%d,node:%p\n",height,node);
+    }
+
+    height++;
+    for(int loop=0;loop<count; loop++) {
+        if (flag) {
+            for(int i=0;i<height; i++) {
+                printf("\t");
+            }
+        }
         maple_type_t tempType= mtGetNodetype(slot[loop]);
-        printf("index:%d, pivot:%lu, slot:%p,type:%d\n",loop,pivots[loop],slot[loop],tempType);
+        if (flag) {
+            printf("index:%d, pivot:%lu, slot:%p,type:%d\n",loop,pivots[loop],slot[loop],tempType);
+        }
         if (slot[loop]){
             if (!mtNodeIsDense(tempType)) {
-                showNode(slot[loop],height,&nodeCount);
+                showNode(slot[loop],height,&nodeCount,flag);
             } else {
                 nodeCount++;
             }
@@ -293,7 +568,17 @@ unsigned long mapTree::showAllNodes(){
     if (!_mt->ma_root) {
         printf("The tree is empty\n");
     } else {
-        showNode(_mt->ma_root,0,&number);
+        showNode(_mt->ma_root,0,&number,true);
+    }
+    return number;
+}
+
+unsigned long mapTree::getAllNodeCount(){
+    unsigned long number = 0;
+    if (!_mt->ma_root) {
+        return number;
+    } else {
+        showNode(_mt->ma_root,0,&number,false);
     }
     return number;
 }

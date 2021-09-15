@@ -61,4 +61,16 @@ typedef enum maple_parent_type {
 
 #define set_parent_root(x) (maple_pnode)((unsigned long)x|(unsigned long)(maple_node_root & MAPLE_PARENTS_NODE_TYPE_MASK)<<MAPLE_PARENT_NODE_BASE)
 
+#define MAPLE_BIG_NODE_SLOTS	(MAPLE_RANGE64_SLOTS * 2 + 2)
+
+struct maple_big_node {
+	maple_pnode parent;
+	maple_enode slot[MAPLE_BIG_NODE_SLOTS];
+	unsigned long pivot[MAPLE_BIG_NODE_SLOTS - 1];
+	unsigned long gap[MAPLE_BIG_NODE_SLOTS];
+	unsigned long min;
+	unsigned char b_end;
+	enum maple_type type;
+};
+
 #endif //__MAPLE_TREE__
