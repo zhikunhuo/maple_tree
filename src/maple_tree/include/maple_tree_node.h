@@ -50,6 +50,10 @@ typedef struct maple_arange_64 {
     unsigned char       meta; 
 }maple_arange_64_t;
 
+struct maple_topiary {
+	maple_pnode parent;
+	maple_enode next; /* Overlaps the pivot */
+};
 
 typedef struct maple_node {
     union {
@@ -69,6 +73,7 @@ typedef enum maple_type {
     maple_node_leaf_64,
     maple_node_range_64,
     maple_node_arange_64,
+    maple_node_parent_range64,
 }maple_type_t;
 
 #define MAPLE_ENODE_BASE        (63 -7) //for 64 system
@@ -80,7 +85,9 @@ typedef enum maple_type {
 
 #define MAPLE_ENODE_NULL_OFFSET  5 
 #define MAPLE_ENODE_NULL        (1UL << MAPLE_ENODE_NULL_OFFSET) //61 for encode null flags
-
+#if defined(__cplusplus)
+extern "C" {
+#endif
 unsigned int mtMallocNode(unsigned int number, void **slot);
 unsigned long * mtNodePivots(maple_node_t * node, maple_type_t type);
 unsigned char mtGetSlotsCount(maple_type_t type);
@@ -98,6 +105,23 @@ void * mtNodeGetSlot(maple_enode enode, maple_type_t type,
                         unsigned char offset);
 unsigned char mtGetMinSlotsCount(maple_type_t type);
 
+void mtSetParent(maple_enode enode, maple_enode parent, unsigned char slot);
+unsigned int mteParentSlot(maple_enode enode);
+maple_node_t * mteGetParent(maple_enode entry);
+maple_type_t mteParentEnum(maple_pnode p_enode);
+unsigned int mteParentSlot(maple_enode enode);
+maple_node_t * mtParent(maple_enode enode);
+void mtSetPivot(maple_node_t *mn, unsigned char piv,
+                maple_type_t type, unsigned long val);
+void mas_set_split_parent(maple_enode enode,  maple_enode left,
+                                   maple_enode right,  unsigned char *slot,
+                                   unsigned char split);
+struct maple_topiary *mtGetTopiary(maple_enode entry);
+void mtSetDeadNode(maple_enode enode);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif //__MAPLE_TREE_NODE__
 

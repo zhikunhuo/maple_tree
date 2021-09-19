@@ -49,8 +49,6 @@ class mapTree{
                     unsigned char end, void *entry,void *content,
                     maple_type_t mt, void **slots,
                     unsigned long *pivots);
-    unsigned char storeBignode( struct maple_big_node *b_node,
-                        void *entry, unsigned char end);
   private:
       mapTreeState * _mas;
       maple_tree_t * _mt;    

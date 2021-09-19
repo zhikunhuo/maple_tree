@@ -24,6 +24,8 @@
 #include "maple_tree.h"
 #include "maple_tree_state.h"
 #include "maple_tree.hpp"
+#include "maple_subtree_state.hpp"
+#include "maple_tree_big_node.hpp"
 
 mapTree::mapTree()
 {
@@ -293,76 +295,6 @@ try_node_store:
     return tryStoreNodeStore(min, max, end, entry,content, mt, slots, pivots);
 }
 
-unsigned char mapTree::storeBignode( struct maple_big_node *b_node,
-                        void *entry, unsigned char end)
-{
-    unsigned char slot    = _mas->_offset;
-    void *contents;
-    unsigned char b_end = 0;
-    /* Possible underflow of piv will wrap back to 0 before use. */
-    unsigned long piv     = _mas->_min - 1;
-    maple_node_t *node    = _mas->masGetNode();
-    enum maple_type mt    = mtGetNodetype(_mas->_node);
-    unsigned long *pivots = mtNodePivots(node, mt);
-    void ** slots;
-
-    if (slot) {
-        /* Copy start data up to insert. */
-        _mas->masCopyNodeToBig(0,(slot - 1), b_node,0);
-        b_end = b_node->b_end;
-        piv  = b_node->pivot[b_end - 1];
-    }
-    slots = mtNodeSlots(node, mt);
-    contents = slots[slot];    
-    if (piv + 1 < _mas->_index) {
-        /* Handle range starting after old range */
-        b_node->slot[b_end] = contents;
-        if (!contents) {
-            b_node->gap[b_end] = _mas->_index - 1 - piv;
-        }
-        b_node->pivot[b_end++] = _mas->_index - 1;
-    }
-    /* Store the new entry. */
-    _mas->_offset = b_end;
-    b_node->slot[b_end] = entry;
-    b_node->pivot[b_end] = _mas->_last;
-
-    /* Handle new range ending before old range ends */
-    piv = _mas->masGetPivot(pivots, slot, mt); 
-    if (piv > _mas->_last) {
-        //if (piv == ULONG_MAX)
-            //mas_bulk_rebalance(mas, b_node->b_end, mt);
-
-        b_node->slot[++b_end] = contents;
-        if (!contents)
-            b_node->gap[b_end] = piv - _mas->_last + 1;
-        b_node->pivot[b_end] = piv;
-    } else {
-        piv = _mas->_last;
-    }
-    /* Appended. */
-    if (piv >= _mas->_max) {
-        return b_end;
-    }
-
-    do {
-        /* Handle range overwrites */
-        piv = _mas->masGetPivot(pivots, ++slot, mt);
-    } while ((piv <= _mas->_last) && (slot <= end));
-
-    if (piv > _mas->_last) {
-        /* Copy end data to the end of the node. */
-        if (slot > end) {
-            b_node->slot[++b_end] = NULL;
-            b_node->pivot[b_end] = piv;
-        } else {
-            _mas->masCopyNodeToBig(slot, end + 1, b_node, ++b_end);
-            b_end = b_node->b_end - 1;
-        }
-    }
-    return b_end;
-}
-
 bool mapTree::insert(unsigned long first, unsigned long end, void *entry){
     unsigned long rMax = 0;
     unsigned long rMin = 0;
@@ -371,7 +303,6 @@ bool mapTree::insert(unsigned long first, unsigned long end, void *entry){
     maple_node_t *node = NULL;
     void  **slots;
     unsigned char endIndex;
-    struct maple_big_node b_node;
 
     if ((first > end) || (!entry)
         ||(!first && !end)) {
@@ -406,13 +337,9 @@ bool mapTree::insert(unsigned long first, unsigned long end, void *entry){
         return true;
     }
 
-    
-    b_node.type = mtGetNodetype(_mas->_node);    
-    //copy pivot and slot to big node
-    b_node.b_end = storeBignode(&b_node, entry, end);    
-    b_node.min   = _mas->_min;
-    unsigned char zero = MAPLE_BIG_NODE_SLOTS - b_node.b_end - 1;    
-
+    mapTreeBigNode bigNode(_mas, entry,end);
+    bigNode.init();
+    bigNode.commitBignode(_mas,end);
     //TODO
     return false;
 }

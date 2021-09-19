@@ -73,6 +73,25 @@ maple_node_t *mtGetNode(maple_enode entry)
 {
     return (maple_node_t *)((unsigned long)entry & MAPLE_NODE_MASK);
 }
+struct maple_topiary *mtGetTopiary(maple_enode entry)
+{
+    return (struct maple_topiary *)((unsigned long)entry & MAPLE_NODE_MASK);
+}
+void mtSetPivot(maple_node_t *mn, unsigned char piv,
+                maple_type_t type, unsigned long val)
+{
+    switch (type) {
+        default:
+    case maple_node_range_64:
+    case maple_node_leaf_64:
+        (&mn->mr64)->pivot[piv] = val;
+        break;
+    case maple_node_arange_64:
+        (&mn->ma64)->pivot[piv] = val;
+    case maple_node_dense:
+        break;
+    }
+}
 
 maple_enode mtSetRootFlag(maple_enode node)
 {
@@ -143,5 +162,88 @@ bool mtDeadNode(maple_enode enode)
     parent = mtParent(enode);
 
     return (parent == node);
+}
+
+void mtSetDeadNode(maple_enode enode)
+{
+    mtGetNode(enode)->parent = mtSetRootFlag(mtGetNode(enode));    
+}
+
+void mtSetParent(maple_enode enode, maple_enode parent, unsigned char slot)
+{
+    unsigned long val = (unsigned long) parent;
+    unsigned long shift;
+    unsigned long type;
+    maple_type_t p_type = mtGetNodetype(parent);
+
+    switch(p_type) {
+        case maple_node_range_64:
+        case maple_node_arange_64:
+            shift = MAPLE_PARENT_SLOT_SHIFT;
+            type  = maple_node_parent_range64;
+            break;
+        case maple_node_dense:
+        case maple_node_leaf_64:
+            shift  = type = 0;
+            break;
+    }
+    val &= MAPLE_NODE_MASK; /* Clear all node metadata in parent */
+    val |=((unsigned long)type<< MAPLE_PARENTS_NODE_TYPE_MASK);
+    val |= ((unsigned long)slot << shift) | val;
+    mtGetNode(enode)->parent = (maple_pnode)val;
+}
+
+maple_type_t mteGetParentType(maple_pnode entry)
+{
+    return  (maple_type_t)(((unsigned long)entry >> MAPLE_PARENT_NODE_BASE) & MAPLE_PARENTS_NODE_TYPE_MASK);
+}
+
+maple_node_t * mteGetParent(maple_enode entry)
+{
+    return (maple_node_t *)((unsigned long)(mtGetNode(entry)->parent) & MAPLE_PARENT_NODE_MASK);
+}
+
+unsigned int mteParentSlot(maple_enode enode)
+{
+    unsigned long val = (unsigned long) mtGetNode(enode)->parent;
+
+    /* Root. */
+    maple_type_t type = mteGetParentType((maple_pnode)val);
+    if (maple_node_arange_64 != type) {        
+        return 0;
+    }
+
+    unsigned int slot = (val & ~(1<<MAPLE_PARENT_NODE_BASE-1)) >> MAPLE_PARENT_SLOT_SHIFT;
+    return slot;
+}
+maple_type_t mteParentType(maple_pnode entry)
+{
+    return  (maple_type_t)(((unsigned long)entry >> MAPLE_PARENT_NODE_BASE) & MAPLE_PARENTS_NODE_TYPE_MASK);
+}
+
+maple_type_t mteParentEnum(maple_pnode p_enode)
+{
+    unsigned long p_type;
+
+    p_type = mteParentType(p_enode);
+
+    switch (p_type) {
+        case maple_node_parent_range64: /* or MAPLE_PARENT_ARANGE64 */
+            return maple_node_range_64;
+    }
+    return maple_node_dense;
+}
+
+void mas_set_split_parent(maple_enode enode,  maple_enode left,
+                                   maple_enode right,  unsigned char *slot,
+                                   unsigned char split)
+{
+    if ((*slot) <= split) {
+        mtSetParent(enode, left, *slot);
+    }else if (right) {
+        mtSetParent(enode, right, (*slot) - split - 1);
+    }
+
+    (*slot)++;
 }
 

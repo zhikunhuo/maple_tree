@@ -39,6 +39,8 @@ extern "C" {
 #endif
     maple_tree_t * mtMalloc(void);
     void mtSetHeight(maple_tree_t *mt, unsigned char depth);
+    unsigned int mtGetheight(maple_tree_t *mt);
+    bool mtNodeIsRoot(maple_enode node, maple_tree_t *mt);
 
 #if defined(__cplusplus)
 }
@@ -53,6 +55,8 @@ typedef enum maple_parent_type {
     maple_node_root = 1,
 }maple_parent_type_t;
 
+#define MA_STATE_BULK		1
+#define MA_STATE_REBALANCE	2
 
 #define MAPLE_ALLOC_RANGE	0x01
 #define MAPLE_USE_RCU		0x02
@@ -72,5 +76,7 @@ struct maple_big_node {
 	unsigned char b_end;
 	enum maple_type type;
 };
+
+
 
 #endif //__MAPLE_TREE__

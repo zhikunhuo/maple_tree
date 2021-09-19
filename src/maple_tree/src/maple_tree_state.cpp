@@ -26,6 +26,19 @@
 #include "maple_tree_state.h"
 #include "maple_tree.h"
 
+mapTreeState::mapTreeState()
+{
+    _mpTree = NULL;
+    _index  = 0;
+    _last   = 0;
+    _node   = 0;
+    _min    = 0;
+    _max    = 0;
+    _alloc  = 0;
+    _depth  = 0;
+    _offset = 0;
+
+}
 
 mapTreeState::mapTreeState(maple_tree_t *tree, unsigned long first, unsigned long end){
     _mpTree = tree;
@@ -37,6 +50,24 @@ mapTreeState::mapTreeState(maple_tree_t *tree, unsigned long first, unsigned lon
     _alloc  = NULL;
     _depth  = 0;
     _offset = 0;
+}
+
+mapTreeState& mapTreeState::operator=(const mapTreeState& mpState){
+    if (this != & mpState) {
+        _mpTree = mpState._mpTree;
+        _index  = mpState._index;
+        _last   = mpState._last;
+        _node   = mpState._node;
+        _min    = mpState._min;
+        _max    = mpState._max;
+        _alloc  = mpState._alloc;
+        _depth  = mpState._depth;
+        _offset = mpState._offset;
+        _flags  = mpState._flags;
+        _state  = mpState._state;
+    }
+
+    return *this;
 }
 
 unsigned long mapTreeState::masGetAllocated(void) {
@@ -70,6 +101,11 @@ unsigned int mapTreeState::masGetReqAlloc()
     }
 
     return 0;
+}
+
+maple_enode mapTreeState::masNewNode(maple_type type)
+{
+    return mtSetNode((maple_node_t *)(masPopNode()), type);
 }
 
 bool mapTreeState::masAllocNodes()
@@ -399,3 +435,201 @@ complete:
     }
 }
 
+
+bool mapTreeState::nodeIsRoot(void){
+    return mtNodeIsRoot(_node, _mpTree);
+}
+
+int mapTreeState::masAscend(void)
+{
+    maple_enode p_enode; /* parent enode. */
+    maple_enode a_enode; /* ancestor enode. */
+    maple_node_t *a_node; /* ancestor node. */
+    maple_node_t *p_node; /* parent node. */
+    unsigned char a_slot;
+    maple_type_t a_type;
+    unsigned long min, max;
+    unsigned long *pivots;
+    unsigned char offset;
+    bool set_max = false, set_min = false;
+
+    a_node = masGetNode();
+    if (nodeIsRoot()) {
+        _offset = 0;
+        return 0;
+    }
+
+    p_enode = masGetNode()->parent;
+    #if 0
+    if (ma_is_root(p_enode, mas->tree)) {
+        mas->node = 
+        mas->max = ULONG_MAX;
+        mas->min = 0;
+        return 0;
+    }
+    #endif
+    p_node  = mteGetParent(_node);
+    a_type  = mteParentEnum(_node);
+    offset  = mteParentSlot(_node);
+    a_enode = mtSetNode(p_node, a_type);
+
+    if (mtDeadNode(_node)) {
+        return 1;
+    }
+    
+    /* Check to make sure all parent information is still accurate */
+    #if 0
+    if (p_node != mte_parent(mas->node)) {
+        return 1;
+    }
+    #endif
+     
+    _node = a_enode;
+    _offset = offset;
+    if ( mtNodeIsRoot(p_enode, _mpTree)) {      
+        _node = mtSetRootFlag(a_enode);
+        _max = ULONG_MAX;
+        _min = 0;
+        return 0;
+    }
+    
+    min = 0;
+    max = ULONG_MAX;
+    pivots = mtNodePivots(a_node, a_type);
+    a_slot = offset;
+    do {
+
+        if (!set_min && a_slot) {
+            set_min = true;
+            min = pivots[a_slot - 1] + 1;
+        }
+
+        if (!set_max && a_slot < mtGetPivotsCount(a_type)) {
+            set_max = true;
+            max = pivots[a_slot];
+        }
+        if (mtDeadNode(a_enode)) {
+            return 1;
+        }
+
+        if (mtNodeIsRoot(p_node, _mpTree)) {
+            break;
+        }
+             
+        p_node = mteGetParent(a_enode);
+        pivots = mtNodePivots(a_node, a_type);
+        a_slot = mteParentSlot(p_enode);
+        p_enode = mtGetNode(a_enode)->parent;
+        a_enode = mtSetNode(p_node, a_type);    
+    }while (!set_min || !set_max);
+    
+    _max = max;
+    _min = min;
+    return 0;
+}
+
+
+void mapTreeState::masDescend()
+{
+    maple_type_t type;
+    unsigned long *pivots;
+    maple_node_t *node;
+    void **slots;
+
+    node   = masGetNode();
+    type   = mtGetNodetype(_node);
+    pivots = mtNodePivots(node, type);
+    slots  = mtNodeSlots(node, type);
+
+    if (_offset) {
+        _min = pivots[_offset - 1] + 1;
+    }
+    _max = masGetPivot(pivots, _offset, type);
+    _node = slots[_offset];
+}
+
+bool mapTreeState::masPrevSibling()
+{
+    unsigned int p_slot = mteParentSlot(_node);
+
+    if (nodeIsRoot()) {
+        return false;
+    }
+
+    if (!p_slot) {
+        return false;
+    }
+
+    masAscend();
+    _offset = p_slot - 1;
+    masDescend();
+    return true;
+}
+
+maple_enode mapTreeState::masGetSlot(unsigned char offset)
+{
+    return mtNodeGetSlot(_node, mtGetNodetype(_node), offset);
+}
+
+bool mapTreeState::masNextSibling()
+{
+    unsigned char end;
+    mapTreeState parent(_mpTree,_index,_last);
+
+    if (parent.nodeIsRoot()) {
+        return false;
+    }
+
+    parent = *this;
+    parent.masAscend();
+    end = parent.masDataEnd();
+    parent._offset = mteParentSlot(_node) + 1;
+    if (parent._offset > end) {
+        return false;
+    }
+
+    if (!parent.masGetSlot(parent._offset)) {
+        return false;
+    }
+
+    *this = parent;
+    masDescend();
+    return true;
+}
+
+void mapTreeState::mas_replace(bool advanced)
+{
+    maple_node_t *mn = masGetNode();
+    maple_enode old_enode;
+    unsigned char offset = 0;
+    void **slots = NULL;
+
+
+    if (nodeIsRoot()) {
+        old_enode = _mpTree->ma_root;
+    } else {
+        offset = mteParentSlot(_node);
+        slots = mtNodeSlots(mtParent(_node), mteParentEnum(_node));
+        old_enode = slots[offset];
+    }
+
+
+    if (!advanced && !mtNodeIsLeaf(mtGetNodetype(_node))) {
+        //mas_adopt_children(mas, mas->node);
+    }
+
+    if (nodeIsRoot()) {
+        mn->parent = set_parent_root((unsigned long)_mpTree);
+        _mpTree->ma_root = mtSetRootFlag(_node);
+        mtSetHeight(_mpTree, _depth);
+    } else {
+        slots[offset] = _node;
+    }
+
+    //if (!advanced)
+    //	mas_free(mas, old_enode);
+}
+void mapTreeState::setHeight()
+{
+    mtSetHeight(_mpTree, _depth);
+}

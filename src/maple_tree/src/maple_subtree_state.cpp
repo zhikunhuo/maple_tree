@@ -1,5 +1,5 @@
 /*
- * maple_tree/maple_tree.c
+ * maple_tree/maple_subtree_state.cpp
  *
  * maple tree library 
  *
@@ -16,41 +16,24 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- *
  */
-
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include "maple_tree_utils.h"
 #include "maple_tree_node.h"
+#include "maple_tree_state.h"
 #include "maple_tree.h"
+#include "maple_subtree_state.hpp"
 
-maple_tree_t * mtMalloc(void){
-    return (maple_tree_t *)calloc(1, sizeof(maple_tree_t));
-}
 
-void mtInit(maple_tree_t *mt, unsigned int ma_flags)
+mapleSubtreeState::mapleSubtreeState()
 {
-    mt->ma_flags = ma_flags;
-    mt->ma_root  = NULL;
+    orig_l = NULL;
+    orig_r  = NULL; 
+    l  = NULL;
+    m  = NULL;
+    r  = NULL;
+    free  = NULL;
+    destroy = NULL;
 }
-
-void mtSetHeight(maple_tree_t *mt, unsigned char depth)
-{
-    unsigned int new_flags = mt->ma_flags;
-
-    new_flags &= ~MAPLE_HEIGHT_MASK;
-    new_flags |= depth << MAPLE_HEIGHT_OFFSET;
-    mt->ma_flags = new_flags;
-}
-
-unsigned int mtGetheight(maple_tree_t *mt)
-{
-	return (mt->ma_flags & MAPLE_HEIGHT_MASK) >> MAPLE_HEIGHT_OFFSET;
-}
-
-bool mtNodeIsRoot(maple_enode node, maple_tree_t *mt)
-{
-	return (mtGetNode(mtGetNode(node)->parent) == (maple_node_t*)mt)?true:false;
-}
-

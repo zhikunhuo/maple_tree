@@ -42,9 +42,11 @@ typedef struct ma_state {
 
 class mapTreeState{
  public:
+    mapTreeState();
     mapTreeState(maple_tree_t *tree, unsigned long first, unsigned long end);
     unsigned long masGetAllocated(void);
     void masSetReqAlloc(unsigned long count);
+    maple_enode masNewNode(maple_type type);
     unsigned int masGetReqAlloc();
     bool masAllocNodes();
     maple_alloc_t * masPopNode();    
@@ -71,6 +73,15 @@ class mapTreeState{
     void masCopyNodeToBig(unsigned char mas_start,
             unsigned char mas_end, struct maple_big_node *b_node,
             unsigned char mab_start);
+    int  masAscend(void);
+    void masDescend();
+    bool masPrevSibling();    
+    maple_enode masGetSlot(unsigned char offset);
+    bool masNextSibling();
+    void setHeight();
+    bool nodeIsRoot(void);
+    void mas_replace(bool advanced);
+    mapTreeState& operator=(const mapTreeState& mpState);
 public:
     maple_tree_t *  _mpTree;
     unsigned long   _index;
