@@ -1,5 +1,6 @@
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include "maple_tree_utils.h"
 #include "maple_tree_node.h"
 #include "maple_tree.h"
@@ -92,12 +93,6 @@ void mtSetPivot(maple_node_t *mn, unsigned char piv,
         break;
     }
 }
-
-maple_enode mtSetRootFlag(maple_enode node)
-{
-    return  (maple_enode)(((unsigned long)node | (MAPLE_ROOT_NODE)<<MAPLE_ENODE_BASE));
-}
-
 unsigned long * mtNodePivots(maple_node_t * node, maple_type_t type)
 {
     switch (type){
@@ -152,7 +147,6 @@ maple_node_t * mtParent(maple_enode enode)
     return (maple_node_t *)((unsigned long)(mtGetNode(enode)->parent) & MAPLE_PARENT_NODE_MASK);
 }
 
-
 bool mtDeadNode(maple_enode enode)
 {
     maple_node_t *parent, *node;
@@ -166,7 +160,7 @@ bool mtDeadNode(maple_enode enode)
 
 void mtSetDeadNode(maple_enode enode)
 {
-    mtGetNode(enode)->parent = mtSetRootFlag(mtGetNode(enode));    
+    mtGetNode(enode)->parent = mtSetParentNode(enode);    
 }
 
 void mtSetParent(maple_enode enode, maple_enode parent, unsigned char slot)
@@ -187,15 +181,17 @@ void mtSetParent(maple_enode enode, maple_enode parent, unsigned char slot)
             shift  = type = 0;
             break;
     }
+    #if 0
+    type  = maple_node_arange_64;
     val &= MAPLE_NODE_MASK; /* Clear all node metadata in parent */
     val |=((unsigned long)type<< MAPLE_PARENTS_NODE_TYPE_MASK);
     val |= ((unsigned long)slot << shift) | val;
+    #endif
+    type = maple_node_range_64;
+    val &= MAPLE_PARENT_NODE_MASK;
+    val |= ((type<<1)<<MAPLE_PARENT_NODE_BASE);
+    val |= ((unsigned long)slot << shift) | val;
     mtGetNode(enode)->parent = (maple_pnode)val;
-}
-
-maple_type_t mteGetParentType(maple_pnode entry)
-{
-    return  (maple_type_t)(((unsigned long)entry >> MAPLE_PARENT_NODE_BASE) & MAPLE_PARENTS_NODE_TYPE_MASK);
 }
 
 maple_node_t * mteGetParent(maple_enode entry)
@@ -208,7 +204,7 @@ unsigned int mteParentSlot(maple_enode enode)
     unsigned long val = (unsigned long) mtGetNode(enode)->parent;
 
     /* Root. */
-    maple_type_t type = mteGetParentType((maple_pnode)val);
+    maple_type_t type = mtGetParentType((maple_pnode)val);
     if (maple_node_arange_64 != type) {        
         return 0;
     }

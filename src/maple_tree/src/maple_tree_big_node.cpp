@@ -47,7 +47,7 @@ void mapTreeBigNode::copyNodeToBigNode(mapTreeState * mas,
     int i = mas_start, j = mab_start;
     unsigned char piv_end;
 
-    mt = mtGetNodetype(mas->_node);
+    mt     = mtGetNodetype(mas->_node);
     pivots = mtNodePivots(node, mt);
     if (!i) {
         _pivot[j] = pivots[i++];
@@ -81,11 +81,12 @@ complete:
     }
 }
 
-void mapTreeBigNode::copyBigNodeToNode(unsigned char mab_start, unsigned char mab_end)
+void mapTreeBigNode::copyBigNodeToNode(unsigned char mab_start, unsigned char mab_end,
+                                            mapTreeState * mas)
 {
     int i, j = 0;
-    maple_type_t mt  = mtGetNodetype(_mas->_node);
-    maple_node *node = _mas->masGetNode();
+    maple_type_t mt  = mtGetNodetype(mas->_node);
+    maple_node *node = mas->masGetNode();
     void  **slots    = mtNodeSlots(node, mt);
     unsigned long *pivots = mtNodePivots(node, mt);
     unsigned long *gaps = NULL;
@@ -102,7 +103,7 @@ void mapTreeBigNode::copyBigNodeToNode(unsigned char mab_start, unsigned char ma
 
     memcpy(slots, _slot + mab_start, sizeof(void *) * (i - mab_start));
 
-    _mas->_max = _pivot[i - 1]; 
+    mas->_max = _pivot[i - 1]; 
 
     //process maple_arange_64 type gap
     #if 0
@@ -133,7 +134,7 @@ unsigned char mapTreeBigNode::storeBignode(void *entry, unsigned char end)
     /* Possible underflow of piv will wrap back to 0 before use. */
     unsigned long piv     = _mas->_min - 1;
     maple_node_t *node    = _mas->masGetNode();
-    enum maple_type mt    = mtGetNodetype(_mas->_node);
+    maple_type_t mt       = mtGetNodetype(_mas->_node);
     unsigned long *pivots = mtNodePivots(node, mt);
     void ** slots;
 
@@ -218,11 +219,8 @@ bool mapTreeBigNode::splitFinalNode(mapleSubtreeState *mast,int height)
     mtSetParent(mast->r->_node, ancestor, mast->r->_offset);
     mtGetNode(ancestor)->parent = _mas->masGetNode()->parent;
     mast->l->_node = ancestor;
-
-
-    copyBigNodeToNode(0, (mtGetSlotsCount(_type) - 1));
-    _mas->_offset = _b_end - 1;    
-
+    copyBigNodeToNode(0, (mtGetSlotsCount(_type) - 1),mast->l);
+    _mas->_offset = _b_end - 1;
     return true;
 }
 
@@ -258,8 +256,7 @@ int mapTreeBigNode::splitNull( unsigned char split, unsigned char slot_count)
             * If the split is less than the max slot && the right side will
             * still be sufficient, then increment the split on NULL.
             */
-        if ((split < slot_count - 2) &&
-        (_b_end - split) > (mtGetMinSlotsCount(_type))) {
+        if ((split < slot_count - 2) && (_b_end - split) > (mtGetMinSlotsCount(_type))) {
             split++;
         }else {
             split--;
@@ -280,12 +277,12 @@ void mapTreeBigNode::splitData(mapleSubtreeState *mast,
 {
     unsigned char p_slot;
  
-    copyBigNodeToNode(0, split);
-    mtSetPivot(mast->r->masGetNode(),  0,mtGetNodetype(mast->r->_node),  mast->r->_max);
-    copyBigNodeToNode(split + 1, _b_end);
+    copyBigNodeToNode(0, split,mast->l);
+    mtSetPivot(mast->r->masGetNode(), 0,mtGetNodetype(mast->r->_node), mast->r->_max);
+    copyBigNodeToNode(split + 1, _b_end,mast->r);    
     mast->l->_offset = mteParentSlot(mas->_node);
     mast->l->_max = _pivot[split];
-    mast->r->_min = mast->l->_max + 1;
+    mast->r->_min = mast->l->_max + 1;    
     if (!mtNodeIsLeaf(mtGetNodetype(mas->_node))) {
         p_slot = mast->orig_l->_offset;
         setSplitParent(mast->orig_l, mast->l->_node,  mast->r->_node, &p_slot, split);
@@ -313,7 +310,6 @@ void mapTreeBigNode::setBigNodeEnd( mapTreeState*mas,
     _slot[_b_end] = entry;    
     //if (mt_is_alloc(mas->tree))
     //    _gap[_b_end] = mas_max_gap(mas);
-    int end=_b_end;
     _pivot[_b_end++] = mas->_max;    
 }
 
@@ -341,12 +337,11 @@ void mapTreeBigNode::mastFillBnode(mapleSubtreeState *mast,
 
     split = _b_end;
     setBigNodeEnd(mast->l, mast->l->_node);
-
     mast->r->_offset = _b_end;
     setBigNodeEnd(mast->r, mast->r->_node);
 
     if (_pivot[_b_end - 1] == mas->_max)
-    cp = false;
+        cp = false;
 
     if (cp) {
         copyNodeToBigNode(mas,split + skip,  (mtGetSlotsCount(mtGetNodetype(_mas->_node)) - 1), _b_end);
@@ -377,7 +372,7 @@ bool mapTreeBigNode::mas_push_data(mapTreeState *mas, int height,
     if (left && !tmp_mas.masPrevSibling()) {
         return false;
     } else if (!left && !tmp_mas.masNextSibling()) {
-    return false;
+        return false;
     }
 
     end = tmp_mas.masDataEnd();
@@ -461,8 +456,9 @@ int mapTreeBigNode::mabCalcSplit(mapTreeState *mas,
         *mid_split = 0;
         if (mtNodeIsLeaf(_type))
             min = 2;
-        else
+        else  {
             return (int)(b_end - mtGetMinSlotsCount(_type));
+        }
 
         split = b_end - min;
         mas->_flags|= MA_STATE_REBALANCE;
@@ -475,21 +471,21 @@ int mapTreeBigNode::mabCalcSplit(mapTreeState *mas,
         split = b_end / 3;
         *mid_split = split * 2;
     } else {
-    min = mtGetMinSlotsCount(_type);
+        min = mtGetMinSlotsCount(_type);
 
-    *mid_split = 0;
-    /*
-    * Avoid having a range less than the slot count unless it
-    * causes one node to be deficient.
-    * NOTE: mt_min_slots is 1 based, b_end and split are zero.
-    */
-    while (((_pivot[split] - _min) < slot_count - 1) &&
-       (split < slot_count - 1) && (b_end - split > min))
-        split++;
+        *mid_split = 0;
+        /*
+             * Avoid having a range less than the slot count unless it
+             * causes one node to be deficient.
+             * NOTE: mt_min_slots is 1 based, b_end and split are zero.
+            */
+        while (((_pivot[split] - _min) < slot_count - 1) &&
+           (split < slot_count - 1) && (b_end - split > min))
+            split++;
     }
 
     /* Avoid ending a node on a NULL entry */
-    split = splitNull(split, slot_count);    
+    split = splitNull(split, slot_count);     
     if (!(*mid_split))
         return split;
 
@@ -511,7 +507,6 @@ bool mapTreeBigNode::splitBigNode()
     mapTreeState prev_r_mas(_mas->_mpTree, _mas->_index, _mas->_last);
 
     MA_TOPIARY(mat, _mas->_mpTree);
-
     _mas->_depth = mtGetheight(_mas->_mpTree);
     /* Allocation failures will happen early. */
     if(false == _mas->masPrevAllocNode(1 + _mas->_depth * 2)) {
@@ -546,7 +541,7 @@ bool mapTreeBigNode::splitBigNode()
             break;
         }
         /*find the split index*/
-        split = mabCalcSplit(_mas, &mid_split); 
+        split = mabCalcSplit(_mas, &mid_split);
         splitData(&mast, _mas, split, &restore);
         /*
              * Usually correct, mab_mas_cp in the above call overwrites
@@ -554,8 +549,6 @@ bool mapTreeBigNode::splitBigNode()
              */
         mast.r->_max = _mas->_max;
         mastFillBnode(&mast, _mas, 1);
-        
-
         prev_l_mas = *mast.l;
         prev_r_mas = *mast.r;
     }
@@ -569,7 +562,7 @@ bool mapTreeBigNode::splitBigNode()
     _mas->_min    = restore._min;
     _mas->_max    = restore._max;
     _mas->_node   = restore._node;
-    return 1;
+    return true;
 }
 
 void mapTreeBigNode::init(void) {
@@ -587,7 +580,7 @@ bool mapTreeBigNode::reuseNode(mapTreeState *mas,unsigned char end)
     unsigned long max;
 
     max = mas->_max;
-    copyBigNodeToNode(0, _b_end);
+    copyBigNodeToNode(0, _b_end,mas);
     mas->_max = max;
 
     if (end > _b_end) {
@@ -605,10 +598,10 @@ bool mapTreeBigNode::reuseNode(mapTreeState *mas,unsigned char end)
 
 }
 
-int mapTreeBigNode::commitBignode(mapTreeState *mas, unsigned char end)
+bool mapTreeBigNode::commitBignode(mapTreeState *mas, unsigned char end)
 {
     maple_enode new_node;
-    unsigned char b_end    = _b_end;
+    unsigned char b_end = _b_end;
     maple_type_t b_type = _type;
 
     //b_end can not meet min number 
@@ -625,22 +618,28 @@ int mapTreeBigNode::commitBignode(mapTreeState *mas, unsigned char end)
 
     if (reuseNode(mas,end)) {
         //goto reuse_node;
-        return 1;
+        return true;
     }
 
     if (false == mas->masPrevAllocNode(1)) {
-        return 0;
+        return false;
     } 
 
     maple_node_t * node= (maple_node_t *)(mas->masPopNode());
     new_node = mtSetNode(node,mtGetNodetype(mas->_node));
     mtGetNode(new_node)->parent = mas->masGetNode()->parent;
     mas->_node = new_node;
-    copyBigNodeToNode(0, b_end);
+    copyBigNodeToNode(0, b_end,mas);
     mas->mas_replace(false);
 
 //reuse_node:
     //mas_update_gap(mas);
-    return 1;
+    return true;
+}
+void mapTreeBigNode::showBigNode()
+{
+    for (int loop =0; loop<(MAPLE_BIG_NODE_SLOTS - 1);loop++) {
+        printf("\t big node index:%d, pivots:%lu,slots:%p\n",loop,_pivot[loop],_slot[loop]);
+    }
 }
 

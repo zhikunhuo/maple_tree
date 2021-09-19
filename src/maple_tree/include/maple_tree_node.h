@@ -99,7 +99,9 @@ unsigned char mtGetPivotsCount(maple_type_t type);
 bool mtNodeIsDense(maple_type_t type);
 bool mtNodeIsLeaf(maple_type_t type);
 maple_node_t *mtGetNode(maple_enode entry);
-maple_enode mtSetRootFlag(maple_enode node);
+unsigned long * masGetPivots(void);
+
+//maple_enode mtSetRootFlag(maple_enode node);
 bool mtDeadNode(maple_enode enode);
 void * mtNodeGetSlot(maple_enode enode, maple_type_t type, 
                         unsigned char offset);

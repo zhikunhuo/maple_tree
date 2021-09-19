@@ -56,6 +56,9 @@ class mapTreeState{
     bool masStart();
     void masSetNode(maple_enode node);
     maple_node_t * masGetNode(void);
+    unsigned long * masGetPivots(void);
+    maple_type_t masGetNodeType(void);
+    void ** masNodeSlots(void);
     unsigned long masGetIndex(void);
     void masSetIndex(unsigned long index);
     unsigned char masGetOffset(void);
@@ -81,6 +84,7 @@ class mapTreeState{
     void setHeight();
     bool nodeIsRoot(void);
     void mas_replace(bool advanced);
+    void showNode(void);
     mapTreeState& operator=(const mapTreeState& mpState);
 public:
     maple_tree_t *  _mpTree;

@@ -51,6 +51,30 @@ unsigned int mtGetheight(maple_tree_t *mt)
 
 bool mtNodeIsRoot(maple_enode node, maple_tree_t *mt)
 {
-	return (mtGetNode(mtGetNode(node)->parent) == (maple_node_t*)mt)?true:false;
+	return (mtGetParentNode(mtGetNode(node)->parent) == (maple_node_t*)mt)?true:false;
 }
 
+maple_pnode mtSetParentRootNode(maple_tree_t *mt)
+{
+    return (maple_pnode)((unsigned long)mt|(unsigned long)((MAPLE_PARENT_NODE<<MAPLE_PARENT_NODE_BASE)));
+}
+
+maple_pnode mtSetParentNode(maple_enode enode)
+{
+    return (maple_pnode)((unsigned long)enode & MAPLE_PARENT_NODE_MASK);
+}
+
+maple_node_t * mtGetParentNode(maple_pnode enode)
+{
+    return (maple_node_t *)((unsigned long)enode & MAPLE_PARENT_NODE_MASK);
+}
+
+maple_type_t mtGetParentType(maple_pnode enode)
+{
+    return (maple_type_t)((((unsigned long)enode>>MAPLE_PARENT_NODE_BASE) & MAPLE_PARENTS_NODE_TYPE_MASK) >> 1);
+}
+
+maple_enode mtSetParentRoot(maple_enode node)
+{
+    return  (maple_enode)(((unsigned long)node & ~MAPLE_PARENT_NODE_FLAG_MASK) | MAPLE_PARENT_NODE_FLAG_MASK);
+}

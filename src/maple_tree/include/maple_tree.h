@@ -41,16 +41,21 @@ extern "C" {
     void mtSetHeight(maple_tree_t *mt, unsigned char depth);
     unsigned int mtGetheight(maple_tree_t *mt);
     bool mtNodeIsRoot(maple_enode node, maple_tree_t *mt);
-
+    maple_node_t * mtGetParentNode(maple_pnode enode);
+    maple_pnode mtSetParentNode(maple_enode enode);
+    maple_pnode mtSetParentRootNode(maple_tree_t *mt);    
+    maple_type_t mtGetParentType(maple_pnode enode);
 #if defined(__cplusplus)
 }
 #endif
 
-#define MAPLE_PARENT_NODE_BASE (63 -8)
+#define MAPLE_PARENT_NODE_BASE (63 -7)
 #define MAPLE_PARENTS_NODE_TYPE_MASK    0x7  //node type 56~59 bit
 #define MAPLE_PARENT_SLOT_SHIFT  (63-4) //59~63  slot id
 #define MAPLE_PARENT_NODE_MASK  ((1UL<<MAPLE_PARENT_NODE_BASE) -1)
 
+#define MAPLE_PARENT_NODE 1UL
+#define MAPLE_PARENT_NODE_FLAG_MASK (1UL<<MAPLE_PARENT_NODE_BASE)
 typedef enum maple_parent_type {
     maple_node_root = 1,
 }maple_parent_type_t;
@@ -63,7 +68,6 @@ typedef enum maple_parent_type {
 #define	MAPLE_HEIGHT_OFFSET	0x02
 #define	MAPLE_HEIGHT_MASK	0x7C
 
-#define set_parent_root(x) (maple_pnode)((unsigned long)x|(unsigned long)(maple_node_root & MAPLE_PARENTS_NODE_TYPE_MASK)<<MAPLE_PARENT_NODE_BASE)
 
 #define MAPLE_BIG_NODE_SLOTS	(MAPLE_RANGE64_SLOTS * 2 + 2)
 

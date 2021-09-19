@@ -39,8 +39,8 @@ public:
                                   unsigned char mas_end,
                                   unsigned char mab_start);
     
-    void copyBigNodeToNode(unsigned char mab_start, unsigned char mab_end);
-    int commitBignode(mapTreeState *mas, unsigned char end);
+    void copyBigNodeToNode(unsigned char mab_start, unsigned char mab_end,mapTreeState * mas);
+    bool commitBignode(mapTreeState *mas, unsigned char end);
     bool reuseNode(mapTreeState *mas,unsigned char end);
     bool splitFinalNode(mapleSubtreeState *mast,int height);
     int splitNull( unsigned char split, unsigned char slot_count);
@@ -62,6 +62,7 @@ public:
     void setSplitParent(mapTreeState *mas,maple_enode left,
                                    maple_enode right,  unsigned char *slot,
                                    unsigned char split);
+    void showBigNode();
 public:
     mapTreeState * _mas;
     void        *  _entry;

@@ -50,6 +50,7 @@ mapTreeState::mapTreeState(maple_tree_t *tree, unsigned long first, unsigned lon
     _alloc  = NULL;
     _depth  = 0;
     _offset = 0;
+    _flags  = 0;
 }
 
 mapTreeState& mapTreeState::operator=(const mapTreeState& mpState){
@@ -283,6 +284,20 @@ maple_node_t * mapTreeState::masGetNode(void)
 {
     return mtGetNode(_node);
 }
+unsigned long * mapTreeState::masGetPivots(void)
+{
+    return mtNodePivots(masGetNode(),masGetNodeType());
+}
+
+maple_type_t mapTreeState::masGetNodeType(void)
+{
+    return mtGetNodetype(_node);
+}
+
+void ** mapTreeState::masNodeSlots(void)
+{
+    return mtNodeSlots(masGetNode(), masGetNodeType());
+}
 
 bool mapTreeState::masIsSpanWsr(unsigned long piv,
                                     maple_type_t type, void *entry)
@@ -442,7 +457,7 @@ bool mapTreeState::nodeIsRoot(void){
 
 int mapTreeState::masAscend(void)
 {
-    maple_enode p_enode; /* parent enode. */
+    maple_pnode p_enode; /* parent enode. */
     maple_enode a_enode; /* ancestor enode. */
     maple_node_t *a_node; /* ancestor node. */
     maple_node_t *p_node; /* parent node. */
@@ -486,8 +501,8 @@ int mapTreeState::masAscend(void)
      
     _node = a_enode;
     _offset = offset;
-    if ( mtNodeIsRoot(p_enode, _mpTree)) {      
-        _node = mtSetRootFlag(a_enode);
+    if (mtNodeIsRoot(p_enode, _mpTree)) {      
+        //_node = mtSetRootFlag(a_enode);
         _max = ULONG_MAX;
         _min = 0;
         return 0;
@@ -576,7 +591,7 @@ bool mapTreeState::masNextSibling()
     unsigned char end;
     mapTreeState parent(_mpTree,_index,_last);
 
-    if (parent.nodeIsRoot()) {
+    if (nodeIsRoot()) {
         return false;
     }
 
@@ -619,8 +634,8 @@ void mapTreeState::mas_replace(bool advanced)
     }
 
     if (nodeIsRoot()) {
-        mn->parent = set_parent_root((unsigned long)_mpTree);
-        _mpTree->ma_root = mtSetRootFlag(_node);
+        mn->parent = mtSetParentRootNode(_mpTree);
+        _mpTree->ma_root = _node;
         mtSetHeight(_mpTree, _depth);
     } else {
         slots[offset] = _node;
@@ -633,3 +648,17 @@ void mapTreeState::setHeight()
 {
     mtSetHeight(_mpTree, _depth);
 }
+
+void mapTreeState::showNode(void){    
+    maple_type_t mt         = mtGetNodetype(_node);
+    maple_node_t *node      = mtGetNode(_node);
+    void **          slots  = mtNodeSlots(node, mt);
+    unsigned long *  piots  = mtNodePivots(node, mt);
+
+    printf("begin node:%p,type:%d\n",node,mt);
+    for(int loop=0; loop <mtGetPivotsCount(mt);loop++) {
+        printf("\tloop: index:%d, pivots:%lu,slots:%p\n",loop,piots[loop],slots[loop]);
+    }
+    printf("end node:%p,type:%d\n",node,mt);
+}
+

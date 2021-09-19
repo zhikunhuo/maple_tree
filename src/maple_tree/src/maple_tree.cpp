@@ -52,9 +52,9 @@ int mapTree::rootExpand(void *entry)
     node   = (maple_node_t *)_mas->masPopNode();
     pivots = mtNodePivots(node, type);
     slots  = mtNodeSlots(node,type);
-    node->parent  = set_parent_root(_mt);//set parent
+    node->parent  = mtSetParentRootNode(_mt);//set parent
     maple_enode enode = mtSetNode(node,type);
-    enode = mtSetRootFlag(enode);
+    //enode = mtSetParentRoot(enode);
     
     if (oldRoot) {
         slots[slot++]= (void *)oldRoot;
@@ -323,9 +323,9 @@ bool mapTree::insert(unsigned long first, unsigned long end, void *entry){
         return NULL;
     }
 
-    mt    = mtGetNodetype(_mas->_node);
+    mt    = _mas->masGetNodeType();
     node  = _mas->masGetNode();
-    slots = mtNodeSlots(node, mt);
+    slots = _mas->masNodeSlots();
     content = slots[_mas->_offset];
 
     if ((content || (_mas->_last > rMax))) {
@@ -337,11 +337,10 @@ bool mapTree::insert(unsigned long first, unsigned long end, void *entry){
         return true;
     }
 
-    mapTreeBigNode bigNode(_mas, entry,end);
+    mapTreeBigNode bigNode(_mas, entry,endIndex);
     bigNode.init();
-    bigNode.commitBignode(_mas,end);
-    //TODO
-    return false;
+    //bigNode.showBigNode();
+    return bigNode.commitBignode(_mas,endIndex);
 }
 
 unsigned long mapTree::getMinPivots(unsigned long *pivots, unsigned char offset)
@@ -357,8 +356,8 @@ unsigned long mapTree::getMinPivots(unsigned long *pivots, unsigned char offset)
 void mapTree::nodeWalk(maple_type_t type,
                         unsigned long *range_min, unsigned long *range_max)
 {
-    unsigned long *pivots = mtNodePivots(_mas->masGetNode(), type);
-    void ** slot           = mtNodeSlots(_mas->masGetNode(), type);
+    unsigned long *pivots =  mtNodePivots(_mas->masGetNode(), type);
+    void ** slot          = mtNodeSlots(_mas->masGetNode(), type);
     unsigned char offset, count;
     unsigned long min, max, index;
     
@@ -487,7 +486,7 @@ void mapTree::showNode(maple_enode node,int height, unsigned long *number,bool f
             }
         }
     } 
-    *number = nodeCount;
+    *number += nodeCount;
 }
 
 unsigned long mapTree::showAllNodes(){
