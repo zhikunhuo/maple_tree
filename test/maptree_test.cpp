@@ -51,5 +51,17 @@ TEST_F(mapleTreeTest,insertNode_2){
         EXPECT_EQ(mptree->insert((i*10+ 50),(i * 10 + 55),(void*)(unsigned long)(i*10+55)),true);
         EXPECT_EQ(mptree->getAllNodeCount(),(i+1));
     }
+
+    EXPECT_EQ(mptree->showAllNodes(),i);
+}
+
+TEST_F(mapleTreeTest,insertNode_3){
+    int i=0;
+    for (i = 0; i <400;i++){
+        EXPECT_EQ(mptree->insert((i*10+ 50),(i * 10 + 55),(void*)(unsigned long)(i*10+55)),true);
+        EXPECT_EQ(mptree->getAllNodeCount(),(i+1));
+    }
+
+    EXPECT_EQ(mptree->showAllNodes(),i);
 }
 

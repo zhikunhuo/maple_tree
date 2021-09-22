@@ -374,7 +374,6 @@ bool mapTreeBigNode::mas_push_data(mapTreeState *mas, int height,
     } else if (!left && !tmp_mas.masNextSibling()) {
         return false;
     }
-
     end = tmp_mas.masDataEnd();
     //show_node(tmp_mas.node); 
     slot_total += end;

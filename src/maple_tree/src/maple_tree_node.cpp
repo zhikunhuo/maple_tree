@@ -205,29 +205,20 @@ unsigned int mteParentSlot(maple_enode enode)
 
     /* Root. */
     maple_type_t type = mtGetParentType((maple_pnode)val);
-    if (maple_node_arange_64 != type) {        
+    if (maple_node_range_64 != type) { 
         return 0;
     }
 
     unsigned int slot = (val & ~(1<<MAPLE_PARENT_NODE_BASE-1)) >> MAPLE_PARENT_SLOT_SHIFT;
     return slot;
 }
-maple_type_t mteParentType(maple_pnode entry)
-{
-    return  (maple_type_t)(((unsigned long)entry >> MAPLE_PARENT_NODE_BASE) & MAPLE_PARENTS_NODE_TYPE_MASK);
-}
-
 maple_type_t mteParentEnum(maple_pnode p_enode)
 {
-    unsigned long p_type;
+    maple_type_t p_type;
 
-    p_type = mteParentType(p_enode);
+    p_type = mtGetParentType(p_enode);
 
-    switch (p_type) {
-        case maple_node_parent_range64: /* or MAPLE_PARENT_ARANGE64 */
-            return maple_node_range_64;
-    }
-    return maple_node_dense;
+    return p_type;
 }
 
 void mas_set_split_parent(maple_enode enode,  maple_enode left,

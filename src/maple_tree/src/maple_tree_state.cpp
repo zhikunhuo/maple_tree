@@ -484,7 +484,7 @@ int mapTreeState::masAscend(void)
     }
     #endif
     p_node  = mteGetParent(_node);
-    a_type  = mteParentEnum(_node);
+    a_type  = mteParentEnum(p_enode);
     offset  = mteParentSlot(_node);
     a_enode = mtSetNode(p_node, a_type);
 
@@ -589,13 +589,12 @@ maple_enode mapTreeState::masGetSlot(unsigned char offset)
 bool mapTreeState::masNextSibling()
 {
     unsigned char end;
-    mapTreeState parent(_mpTree,_index,_last);
+    mapTreeState parent=*this;
 
     if (nodeIsRoot()) {
         return false;
     }
 
-    parent = *this;
     parent.masAscend();
     end = parent.masDataEnd();
     parent._offset = mteParentSlot(_node) + 1;
@@ -608,7 +607,8 @@ bool mapTreeState::masNextSibling()
     }
 
     *this = parent;
-    masDescend();
+    parent.masDescend();
+ 
     return true;
 }
 
